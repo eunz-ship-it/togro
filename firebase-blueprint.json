@@ -1,0 +1,306 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "청년 사용자의 온보딩 상태 및 비식별 맞춤 설정 정보",
+      "type": "object",
+      "properties": {
+        "ownerId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "nickname": { "type": "string", "minLength": 1, "maxLength": 40 },
+        "age": { "type": "integer", "description": "사용자 만 나이 (15~99)" },
+        "ageGroup": { "type": "string", "enum": ["19-24세", "25-29세", "30-34세", "미선택"] },
+        "jobPrepStatus": { "type": "string", "maxLength": 60, "description": "현재 취업 준비 상황" },
+        "region": { "type": "string", "maxLength": 40 },
+        "interests": { "type": "array", "description": "최대 8개 관심 분야" },
+        "currentGoalFocus": { "type": "string", "maxLength": 120 },
+        "onboardingCompleted": { "type": "boolean" },
+        "onboardingSkipped": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["ownerId", "nickname", "ageGroup", "region", "interests", "currentGoalFocus", "onboardingCompleted", "onboardingSkipped", "createdAt", "updatedAt"]
+    },
+    "DailyCheckin": {
+      "title": "DailyCheckin",
+      "description": "사용자가 직접 기록하는 일일 감정·컨디션·가용 시간 체크인 및 자기관리 제안",
+      "type": "object",
+      "properties": {
+        "ownerId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "moodScore": { "type": "integer" },
+        "moodLabel": { "type": "string", "enum": ["차분함", "막막함", "지침", "괜찮음", "의욕 있음", "불안함"] },
+        "energyLevel": { "type": "integer" },
+        "availableMinutes": { "type": "integer", "description": "오늘 실천 가능한 시간(분, 5~480)" },
+        "reflection": { "type": "string", "maxLength": 1000 },
+        "selfCareSuggestion": { "type": "string", "maxLength": 600 },
+        "checkinDate": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$", "maxLength": 10 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["ownerId", "moodScore", "moodLabel", "energyLevel", "reflection", "selfCareSuggestion", "checkinDate", "createdAt", "updatedAt"]
+    },
+    "WorryItem": {
+      "title": "WorryItem",
+      "description": "사용자의 현재 고민과 해결 상태 관리 항목",
+      "type": "object",
+      "properties": {
+        "ownerId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "title": { "type": "string", "minLength": 1, "maxLength": 140 },
+        "description": { "type": "string", "maxLength": 1500 },
+        "category": { "type": "string", "enum": ["진로 방향", "생활 리듬", "역량 부족", "심리적 부담", "경제·생활", "정보 탐색"] },
+        "status": { "type": "string", "enum": ["아직 해결되지 않음", "해결 방법 탐색 중", "실천 중", "해결됨", "잠시 보류"] },
+        "aiSummary": { "type": "string", "maxLength": 800 },
+        "nextStep": { "type": "string", "maxLength": 300 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["ownerId", "title", "description", "category", "status", "aiSummary", "nextStep", "createdAt", "updatedAt"]
+    },
+    "GrowthRoadmap": {
+      "title": "GrowthRoadmap",
+      "description": "목표 유형별 개인 맞춤형 성장 로드맵",
+      "type": "object",
+      "properties": {
+        "ownerId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "title": { "type": "string", "minLength": 1, "maxLength": 140 },
+        "goalType": { "type": "string", "enum": ["생활 습관", "학업·학습", "자기계발", "진로 탐색", "취업 준비", "사용자 직접 설정"] },
+        "timeframe": { "type": "string", "maxLength": 60 },
+        "summary": { "type": "string", "maxLength": 800 },
+        "energyLevel": { "type": "integer", "description": "설계 시점 사용자 여력 (1~5)" },
+        "recommendationReason": { "type": "string", "maxLength": 600 },
+        "energyFitExplanation": { "type": "string", "maxLength": 500 },
+        "status": { "type": "string", "enum": ["active", "adjusted", "completed", "paused"] },
+        "progressPercent": { "type": "integer" },
+        "adjustmentReason": { "type": "string", "maxLength": 500 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["ownerId", "title", "goalType", "timeframe", "summary", "status", "progressPercent", "adjustmentReason", "createdAt", "updatedAt"]
+    },
+    "RoadmapTask": {
+      "title": "RoadmapTask",
+      "description": "성장 로드맵의 일일·주간 실천 세부 항목",
+      "type": "object",
+      "properties": {
+        "ownerId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "roadmapId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "title": { "type": "string", "minLength": 1, "maxLength": 180 },
+        "description": { "type": "string", "maxLength": 600 },
+        "cadence": { "type": "string", "enum": ["daily", "weekly"] },
+        "dayLabel": { "type": "string", "maxLength": 40 },
+        "scheduledDate": { "type": "string", "maxLength": 10 },
+        "durationMinutes": { "type": "integer" },
+        "status": { "type": "string", "enum": ["진행 예정", "실천 중", "완료", "미완료", "건너뛰기"] },
+        "completed": { "type": "boolean" },
+        "completedAt": { "type": "string", "format": "date-time" },
+        "blockerNote": { "type": "string", "maxLength": 500 },
+        "adjustedFrom": { "type": "string", "maxLength": 180 },
+        "sortOrder": { "type": "integer" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["ownerId", "roadmapId", "title", "cadence", "dayLabel", "durationMinutes", "completed", "blockerNote", "adjustedFrom", "sortOrder", "createdAt", "updatedAt"]
+    },
+    "GoalActivityLog": {
+      "title": "GoalActivityLog",
+      "description": "로드맵·실천 항목의 상태 변경 및 내용 수정 상세 이력",
+      "type": "object",
+      "properties": {
+        "ownerId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "roadmapId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "taskId": { "type": "string", "maxLength": 128 },
+        "actionType": { "type": "string", "minLength": 1, "maxLength": 60 },
+        "changedField": { "type": "string", "minLength": 1, "maxLength": 60 },
+        "previousValue": { "type": "string", "maxLength": 300 },
+        "newValue": { "type": "string", "maxLength": 300 },
+        "actor": { "type": "string", "enum": ["AI 제안", "사용자 수정"] },
+        "reason": { "type": "string", "maxLength": 500 },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["ownerId", "roadmapId", "taskId", "actionType", "changedField", "previousValue", "newValue", "actor", "reason", "createdAt"]
+    },
+    "CompetencyCard": {
+      "title": "CompetencyCard",
+      "description": "기존 경험 및 실천 기록 기반 근거 중심 역량 카드",
+      "type": "object",
+      "properties": {
+        "ownerId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "name": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "category": { "type": "string", "maxLength": 60 },
+        "evidenceSummary": { "type": "string", "maxLength": 800 },
+        "sourceType": { "type": "string", "enum": ["existing", "practice"] },
+        "verifiedByUser": { "type": "boolean" },
+        "targetRoles": { "type": "array", "description": "최대 6개 추천 직무" },
+        "growthTip": { "type": "string", "maxLength": 400 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["ownerId", "name", "category", "evidenceSummary", "sourceType", "verifiedByUser", "targetRoles", "growthTip", "createdAt", "updatedAt"]
+    },
+    "PortfolioDoc": {
+      "title": "PortfolioDoc",
+      "description": "사용자 경험 기반 자기소개서·포트폴리오 문서",
+      "type": "object",
+      "properties": {
+        "ownerId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "title": { "type": "string", "minLength": 1, "maxLength": 140 },
+        "targetRole": { "type": "string", "maxLength": 100 },
+        "introSummary": { "type": "string", "maxLength": 3000 },
+        "strengthsSection": { "type": "string", "maxLength": 3000 },
+        "experiencesSection": { "type": "string", "maxLength": 4000 },
+        "projectsSection": { "type": "string", "maxLength": 4000 },
+        "completionPercent": { "type": "integer" },
+        "versionNumber": { "type": "integer" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["ownerId", "title", "targetRole", "introSummary", "strengthsSection", "experiencesSection", "projectsSection", "completionPercent", "versionNumber", "createdAt", "updatedAt"]
+    },
+    "PortfolioVersion": {
+      "title": "PortfolioVersion",
+      "description": "포트폴리오 수정 이력 스냅샷 (이전 버전 조회 및 복원용)",
+      "type": "object",
+      "properties": {
+        "ownerId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "portfolioId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "versionNumber": { "type": "integer" },
+        "title": { "type": "string", "minLength": 1, "maxLength": 140 },
+        "targetRole": { "type": "string", "maxLength": 100 },
+        "introSummary": { "type": "string", "maxLength": 3000 },
+        "strengthsSection": { "type": "string", "maxLength": 3000 },
+        "experiencesSection": { "type": "string", "maxLength": 4000 },
+        "projectsSection": { "type": "string", "maxLength": 4000 },
+        "completionPercent": { "type": "integer" },
+        "changeNote": { "type": "string", "maxLength": 200 },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["ownerId", "portfolioId", "versionNumber", "title", "targetRole", "introSummary", "strengthsSection", "experiencesSection", "projectsSection", "completionPercent", "changeNote", "createdAt"]
+    },
+    "AgentMessage": {
+      "title": "AgentMessage",
+      "description": "AI 에이전트와의 대화 기록",
+      "type": "object",
+      "properties": {
+        "ownerId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "role": { "type": "string", "enum": ["user", "assistant"] },
+        "content": { "type": "string", "minLength": 1, "maxLength": 4000 },
+        "supportType": { "type": "string", "maxLength": 80 },
+        "suggestedAction": { "type": "string", "maxLength": 200 },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["ownerId", "role", "content", "supportType", "suggestedAction", "createdAt"]
+    },
+    "ActivityLog": {
+      "title": "ActivityLog",
+      "description": "사용자의 실천, 상태 변경 및 수정 히스토리 기록",
+      "type": "object",
+      "properties": {
+        "ownerId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "actionType": { "type": "string", "maxLength": 60 },
+        "targetSection": { "type": "string", "maxLength": 60 },
+        "summary": { "type": "string", "minLength": 1, "maxLength": 300 },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["ownerId", "actionType", "targetSection", "summary", "createdAt"]
+    },
+    "SavedProgram": {
+      "title": "SavedProgram",
+      "description": "사용자가 저장하거나 관심 등록한 공공·청년 지원 프로그램",
+      "type": "object",
+      "properties": {
+        "ownerId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "programId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "title": { "type": "string", "minLength": 1, "maxLength": 160 },
+        "provider": { "type": "string", "maxLength": 100 },
+        "region": { "type": "string", "maxLength": 40 },
+        "category": { "type": "string", "maxLength": 60 },
+        "applyUrl": { "type": "string", "maxLength": 500 },
+        "notifyRequested": { "type": "boolean" },
+        "deadline": { "type": "string", "maxLength": 40 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["ownerId", "programId", "title", "provider", "region", "category", "applyUrl", "notifyRequested", "deadline", "createdAt", "updatedAt"]
+    },
+    "RecommendedProgram": {
+      "title": "RecommendedProgram",
+      "description": "나의 고민 분석 결과로 추천되어 지원 프로그램 메뉴에 연동되는 검증된 지원 프로그램",
+      "type": "object",
+      "properties": {
+        "ownerId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "programId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "title": { "type": "string", "minLength": 1, "maxLength": 160 },
+        "provider": { "type": "string", "maxLength": 100 },
+        "region": { "type": "string", "maxLength": 40 },
+        "category": { "type": "string", "maxLength": 60 },
+        "summary": { "type": "string", "maxLength": 600 },
+        "eligibility": { "type": "string", "maxLength": 400 },
+        "howToApply": { "type": "string", "maxLength": 400 },
+        "deadline": { "type": "string", "maxLength": 80 },
+        "applyUrl": { "type": "string", "maxLength": 500 },
+        "sourceNote": { "type": "string", "maxLength": 200 },
+        "linkType": { "type": "string", "maxLength": 40 },
+        "recruitmentStatus": { "type": "string", "maxLength": 60 },
+        "recommendationReason": { "type": "string", "maxLength": 500 },
+        "conditionNote": { "type": "string", "maxLength": 400 },
+        "worrySummary": { "type": "string", "maxLength": 200 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["ownerId", "programId", "title", "provider", "region", "category", "summary", "eligibility", "howToApply", "deadline", "applyUrl", "sourceNote", "linkType", "recruitmentStatus", "recommendationReason", "conditionNote", "worrySummary", "createdAt", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "사용자 온보딩 및 맞춤 설정 프로필 (본인 전용 접근)"
+    },
+    "/users/{userId}/checkins/{checkinId}": {
+      "schema": { "$ref": "#/entities/DailyCheckin" },
+      "description": "일일 감정·컨디션·가용 시간 자기점검 기록"
+    },
+    "/users/{userId}/worries/{worryId}": {
+      "schema": { "$ref": "#/entities/WorryItem" },
+      "description": "고민 등록 및 해결 상태 추적"
+    },
+    "/users/{userId}/roadmaps/{roadmapId}": {
+      "schema": { "$ref": "#/entities/GrowthRoadmap" },
+      "description": "목표별 개인 성장 로드맵"
+    },
+    "/users/{userId}/roadmaps/{roadmapId}/tasks/{taskId}": {
+      "schema": { "$ref": "#/entities/RoadmapTask" },
+      "description": "로드맵 일일·주간 실행 체크리스트"
+    },
+    "/users/{userId}/goalActivityLogs/{logId}": {
+      "schema": { "$ref": "#/entities/GoalActivityLog" },
+      "description": "로드맵·실천 항목 변경 및 상태 이력 로그 (추가 전용)"
+    },
+    "/users/{userId}/competencies/{competencyId}": {
+      "schema": { "$ref": "#/entities/CompetencyCard" },
+      "description": "경험 기반 역량 카드 (기존 사용자 데이터 보존)"
+    },
+    "/users/{userId}/portfolios/{portfolioId}": {
+      "schema": { "$ref": "#/entities/PortfolioDoc" },
+      "description": "포트폴리오 문서 (기존 사용자 데이터 보존)"
+    },
+    "/users/{userId}/portfolios/{portfolioId}/versions/{versionId}": {
+      "schema": { "$ref": "#/entities/PortfolioVersion" },
+      "description": "포트폴리오 수정 버전 히스토리 (기존 사용자 데이터 보존)"
+    },
+    "/users/{userId}/conversations/{messageId}": {
+      "schema": { "$ref": "#/entities/AgentMessage" },
+      "description": "AI 에이전트 대화 내역"
+    },
+    "/users/{userId}/activities/{activityId}": {
+      "schema": { "$ref": "#/entities/ActivityLog" },
+      "description": "활동 및 수정 히스토리 로그"
+    },
+    "/users/{userId}/savedPrograms/{programId}": {
+      "schema": { "$ref": "#/entities/SavedProgram" },
+      "description": "관심 등록한 청년 지원 프로그램"
+    },
+    "/users/{userId}/recommendedPrograms/{programId}": {
+      "schema": { "$ref": "#/entities/RecommendedProgram" },
+      "description": "나의 고민 분석을 통해 추천된 지원 프로그램"
+    }
+  }
+}

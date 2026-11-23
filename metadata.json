@@ -1,0 +1,6 @@
+{
+  "name": "TOGRO (투그로)",
+  "description": "청년의 일상 회복과 진로 성장을 돕는 AI 성장 지원 에이전트 TOGRO. 부담 없는 대화로 고민을 정리하고 맞춤형 공공 지원 프로그램 추천과 작은 성장 로드맵 실천까지 함께합니다.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

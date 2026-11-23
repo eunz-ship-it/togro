@@ -1,0 +1,667 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 1. Global Safety Net (Default-Deny)
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // 2. Hardened Primitives
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerified() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isVerifiedOwner(userId) {
+      return isVerified() && request.auth.uid == userId;
+    }
+
+    function isBoundedString(val, minLen, maxLen) {
+      return val is string && val.size() >= minLen && val.size() <= maxLen;
+    }
+
+    function isStringList(listVal, maxItems) {
+      return listVal is list && listVal.size() <= maxItems && (listVal.size() == 0 || listVal[0] is string);
+    }
+
+    // 3. Entity Validation Blueprints
+    function isValidUserProfile(data, userId) {
+      return data.keys().hasAll([
+        'ownerId', 'nickname', 'ageGroup', 'region', 'interests',
+        'currentGoalFocus', 'onboardingCompleted', 'onboardingSkipped',
+        'createdAt', 'updatedAt'
+      ])
+      && data.keys().hasOnly([
+        'ownerId', 'nickname', 'age', 'ageGroup', 'jobPrepStatus', 'region', 'interests',
+        'currentGoalFocus', 'onboardingCompleted', 'onboardingSkipped',
+        'createdAt', 'updatedAt'
+      ])
+      && data.ownerId == userId
+      && isValidId(data.ownerId)
+      && isBoundedString(data.nickname, 1, 40)
+      && (!('age' in data) || (data.age is int && data.age >= 15 && data.age <= 99))
+      && data.ageGroup in ['19-24세', '25-29세', '30-34세', '미선택']
+      && (!('jobPrepStatus' in data) || isBoundedString(data.jobPrepStatus, 0, 60))
+      && isBoundedString(data.region, 0, 40)
+      && isStringList(data.interests, 8)
+      && isBoundedString(data.currentGoalFocus, 0, 120)
+      && data.onboardingCompleted is bool
+      && data.onboardingSkipped is bool
+      && data.createdAt is timestamp
+      && data.updatedAt is timestamp;
+    }
+
+    function isValidDailyCheckin(data, userId) {
+      return data.keys().hasAll([
+        'ownerId', 'moodScore', 'moodLabel', 'energyLevel',
+        'reflection', 'selfCareSuggestion', 'checkinDate',
+        'createdAt', 'updatedAt'
+      ])
+      && data.keys().hasOnly([
+        'ownerId', 'moodScore', 'moodLabel', 'energyLevel', 'availableMinutes',
+        'reflection', 'selfCareSuggestion', 'checkinDate',
+        'createdAt', 'updatedAt'
+      ])
+      && data.ownerId == userId
+      && isValidId(data.ownerId)
+      && data.moodScore is int && data.moodScore >= 1 && data.moodScore <= 5
+      && data.moodLabel in ['차분함', '막막함', '지침', '괜찮음', '의욕 있음', '불안함']
+      && data.energyLevel is int && data.energyLevel >= 1 && data.energyLevel <= 5
+      && (!('availableMinutes' in data) || (data.availableMinutes is int && data.availableMinutes >= 5 && data.availableMinutes <= 480))
+      && isBoundedString(data.reflection, 0, 1000)
+      && isBoundedString(data.selfCareSuggestion, 0, 600)
+      && isBoundedString(data.checkinDate, 10, 10)
+      && data.checkinDate.matches('^\\d{4}-\\d{2}-\\d{2}$')
+      && data.createdAt is timestamp
+      && data.updatedAt is timestamp;
+    }
+
+    function isValidWorryItem(data, userId) {
+      return data.keys().hasAll([
+        'ownerId', 'title', 'description', 'category',
+        'status', 'aiSummary', 'nextStep', 'createdAt', 'updatedAt'
+      ])
+      && data.keys().hasOnly([
+        'ownerId', 'title', 'description', 'category',
+        'status', 'aiSummary', 'nextStep', 'createdAt', 'updatedAt'
+      ])
+      && data.ownerId == userId
+      && isValidId(data.ownerId)
+      && isBoundedString(data.title, 1, 140)
+      && isBoundedString(data.description, 0, 1500)
+      && data.category in ['진로 방향', '생활 리듬', '역량 부족', '심리적 부담', '경제·생활', '정보 탐색']
+      && data.status in ['아직 해결되지 않음', '해결 방법 탐색 중', '실천 중', '해결됨', '잠시 보류']
+      && isBoundedString(data.aiSummary, 0, 800)
+      && isBoundedString(data.nextStep, 0, 300)
+      && data.createdAt is timestamp
+      && data.updatedAt is timestamp;
+    }
+
+    function isValidGrowthRoadmap(data, userId) {
+      return data.keys().hasAll([
+        'ownerId', 'title', 'goalType', 'timeframe', 'summary',
+        'status', 'progressPercent', 'adjustmentReason', 'createdAt', 'updatedAt'
+      ])
+      && data.keys().hasOnly([
+        'ownerId', 'title', 'goalType', 'timeframe', 'summary',
+        'energyLevel', 'recommendationReason', 'energyFitExplanation',
+        'status', 'progressPercent', 'adjustmentReason', 'createdAt', 'updatedAt'
+      ])
+      && data.ownerId == userId
+      && isValidId(data.ownerId)
+      && isBoundedString(data.title, 1, 140)
+      && data.goalType in ['생활 습관', '학업·학습', '자기계발', '진로 탐색', '취업 준비', '사용자 직접 설정']
+      && isBoundedString(data.timeframe, 1, 60)
+      && isBoundedString(data.summary, 0, 800)
+      && (!('energyLevel' in data) || (data.energyLevel is int && data.energyLevel >= 1 && data.energyLevel <= 5))
+      && (!('recommendationReason' in data) || isBoundedString(data.recommendationReason, 0, 600))
+      && (!('energyFitExplanation' in data) || isBoundedString(data.energyFitExplanation, 0, 500))
+      && data.status in ['active', 'adjusted', 'completed', 'paused']
+      && data.progressPercent is int && data.progressPercent >= 0 && data.progressPercent <= 100
+      && isBoundedString(data.adjustmentReason, 0, 500)
+      && data.createdAt is timestamp
+      && data.updatedAt is timestamp;
+    }
+
+    function isValidRoadmapTask(data, userId, roadmapId) {
+      return data.keys().hasAll([
+        'ownerId', 'roadmapId', 'title', 'cadence', 'dayLabel',
+        'durationMinutes', 'completed', 'blockerNote', 'adjustedFrom',
+        'sortOrder', 'createdAt', 'updatedAt'
+      ])
+      && data.keys().hasOnly([
+        'ownerId', 'roadmapId', 'title', 'description', 'cadence', 'dayLabel',
+        'scheduledDate', 'durationMinutes', 'status', 'completed', 'completedAt',
+        'blockerNote', 'adjustedFrom', 'sortOrder', 'createdAt', 'updatedAt'
+      ])
+      && data.ownerId == userId
+      && data.roadmapId == roadmapId
+      && isValidId(data.ownerId)
+      && isValidId(data.roadmapId)
+      && isBoundedString(data.title, 1, 180)
+      && (!('description' in data) || isBoundedString(data.description, 0, 600))
+      && data.cadence in ['daily', 'weekly']
+      && isBoundedString(data.dayLabel, 1, 40)
+      && (!('scheduledDate' in data) || data.scheduledDate == '' || (isBoundedString(data.scheduledDate, 10, 10) && data.scheduledDate.matches('^\\d{4}-\\d{2}-\\d{2}$')))
+      && data.durationMinutes is int && data.durationMinutes >= 1 && data.durationMinutes <= 480
+      && (!('status' in data) || data.status in ['진행 예정', '실천 중', '완료', '미완료', '건너뛰기'])
+      && data.completed is bool
+      && (!('completedAt' in data) || data.completedAt == null || data.completedAt is timestamp)
+      && isBoundedString(data.blockerNote, 0, 500)
+      && isBoundedString(data.adjustedFrom, 0, 180)
+      && data.sortOrder is int && data.sortOrder >= 0 && data.sortOrder <= 500
+      && data.createdAt is timestamp
+      && data.updatedAt is timestamp;
+    }
+
+    function isValidGoalActivityLog(data, userId) {
+      return data.keys().hasAll([
+        'ownerId', 'roadmapId', 'taskId', 'actionType', 'changedField',
+        'previousValue', 'newValue', 'actor', 'reason', 'createdAt'
+      ])
+      && data.keys().hasOnly([
+        'ownerId', 'roadmapId', 'taskId', 'actionType', 'changedField',
+        'previousValue', 'newValue', 'actor', 'reason', 'createdAt'
+      ])
+      && data.ownerId == userId
+      && isValidId(data.ownerId)
+      && isValidId(data.roadmapId)
+      && isBoundedString(data.taskId, 0, 128)
+      && isBoundedString(data.actionType, 1, 60)
+      && isBoundedString(data.changedField, 1, 60)
+      && isBoundedString(data.previousValue, 0, 300)
+      && isBoundedString(data.newValue, 0, 300)
+      && data.actor in ['AI 제안', '사용자 수정']
+      && isBoundedString(data.reason, 0, 500)
+      && data.createdAt is timestamp;
+    }
+
+    function isValidCompetencyCard(data, userId) {
+      return data.keys().hasAll([
+        'ownerId', 'name', 'category', 'evidenceSummary', 'sourceType',
+        'verifiedByUser', 'targetRoles', 'growthTip', 'createdAt', 'updatedAt'
+      ])
+      && data.keys().hasOnly([
+        'ownerId', 'name', 'category', 'evidenceSummary', 'sourceType',
+        'verifiedByUser', 'targetRoles', 'growthTip', 'createdAt', 'updatedAt'
+      ])
+      && data.ownerId == userId
+      && isValidId(data.ownerId)
+      && isBoundedString(data.name, 1, 80)
+      && isBoundedString(data.category, 1, 60)
+      && isBoundedString(data.evidenceSummary, 0, 800)
+      && data.sourceType in ['existing', 'practice']
+      && data.verifiedByUser is bool
+      && isStringList(data.targetRoles, 6)
+      && isBoundedString(data.growthTip, 0, 400)
+      && data.createdAt is timestamp
+      && data.updatedAt is timestamp;
+    }
+
+    function isValidPortfolioDoc(data, userId) {
+      return data.keys().hasAll([
+        'ownerId', 'title', 'targetRole', 'introSummary', 'strengthsSection',
+        'experiencesSection', 'projectsSection', 'completionPercent',
+        'versionNumber', 'createdAt', 'updatedAt'
+      ])
+      && data.keys().hasOnly([
+        'ownerId', 'title', 'targetRole', 'introSummary', 'strengthsSection',
+        'experiencesSection', 'projectsSection', 'completionPercent',
+        'versionNumber', 'createdAt', 'updatedAt'
+      ])
+      && data.ownerId == userId
+      && isValidId(data.ownerId)
+      && isBoundedString(data.title, 1, 140)
+      && isBoundedString(data.targetRole, 0, 100)
+      && isBoundedString(data.introSummary, 0, 3000)
+      && isBoundedString(data.strengthsSection, 0, 3000)
+      && isBoundedString(data.experiencesSection, 0, 4000)
+      && isBoundedString(data.projectsSection, 0, 4000)
+      && data.completionPercent is int && data.completionPercent >= 0 && data.completionPercent <= 100
+      && data.versionNumber is int && data.versionNumber >= 1 && data.versionNumber <= 10000
+      && data.createdAt is timestamp
+      && data.updatedAt is timestamp;
+    }
+
+    function isValidPortfolioVersion(data, userId, portfolioId) {
+      return data.keys().hasAll([
+        'ownerId', 'portfolioId', 'versionNumber', 'title', 'targetRole',
+        'introSummary', 'strengthsSection', 'experiencesSection',
+        'projectsSection', 'completionPercent', 'changeNote', 'createdAt'
+      ])
+      && data.keys().hasOnly([
+        'ownerId', 'portfolioId', 'versionNumber', 'title', 'targetRole',
+        'introSummary', 'strengthsSection', 'experiencesSection',
+        'projectsSection', 'completionPercent', 'changeNote', 'createdAt'
+      ])
+      && data.ownerId == userId
+      && data.portfolioId == portfolioId
+      && isValidId(data.ownerId)
+      && isValidId(data.portfolioId)
+      && data.versionNumber is int && data.versionNumber >= 1 && data.versionNumber <= 10000
+      && isBoundedString(data.title, 1, 140)
+      && isBoundedString(data.targetRole, 0, 100)
+      && isBoundedString(data.introSummary, 0, 3000)
+      && isBoundedString(data.strengthsSection, 0, 3000)
+      && isBoundedString(data.experiencesSection, 0, 4000)
+      && isBoundedString(data.projectsSection, 0, 4000)
+      && data.completionPercent is int && data.completionPercent >= 0 && data.completionPercent <= 100
+      && isBoundedString(data.changeNote, 0, 200)
+      && data.createdAt is timestamp;
+    }
+
+    function isValidAgentMessage(data, userId) {
+      return data.keys().hasAll([
+        'ownerId', 'role', 'content', 'supportType', 'suggestedAction', 'createdAt'
+      ])
+      && data.keys().hasOnly([
+        'ownerId', 'role', 'content', 'supportType', 'suggestedAction', 'createdAt'
+      ])
+      && data.ownerId == userId
+      && isValidId(data.ownerId)
+      && data.role in ['user', 'assistant']
+      && isBoundedString(data.content, 1, 4000)
+      && isBoundedString(data.supportType, 0, 80)
+      && isBoundedString(data.suggestedAction, 0, 200)
+      && data.createdAt is timestamp;
+    }
+
+    function isValidActivityLog(data, userId) {
+      return data.keys().hasAll([
+        'ownerId', 'actionType', 'targetSection', 'summary', 'createdAt'
+      ])
+      && data.keys().hasOnly([
+        'ownerId', 'actionType', 'targetSection', 'summary', 'createdAt'
+      ])
+      && data.ownerId == userId
+      && isValidId(data.ownerId)
+      && isBoundedString(data.actionType, 1, 60)
+      && isBoundedString(data.targetSection, 1, 60)
+      && isBoundedString(data.summary, 1, 300)
+      && data.createdAt is timestamp;
+    }
+
+    function isValidSavedProgram(data, userId, programId) {
+      return data.keys().hasAll([
+        'ownerId', 'programId', 'title', 'provider', 'region', 'category',
+        'applyUrl', 'notifyRequested', 'deadline', 'createdAt', 'updatedAt'
+      ])
+      && data.keys().hasOnly([
+        'ownerId', 'programId', 'title', 'provider', 'region', 'category',
+        'applyUrl', 'notifyRequested', 'deadline', 'createdAt', 'updatedAt'
+      ])
+      && data.ownerId == userId
+      && data.programId == programId
+      && isValidId(data.ownerId)
+      && isValidId(data.programId)
+      && isBoundedString(data.title, 1, 160)
+      && isBoundedString(data.provider, 1, 100)
+      && isBoundedString(data.region, 1, 40)
+      && isBoundedString(data.category, 1, 60)
+      && isBoundedString(data.applyUrl, 0, 500)
+      && data.notifyRequested is bool
+      && isBoundedString(data.deadline, 0, 40)
+      && data.createdAt is timestamp
+      && data.updatedAt is timestamp;
+    }
+
+    function isValidRecommendedProgram(data, userId, programId) {
+      return data.keys().hasAll([
+        'ownerId', 'programId', 'title', 'provider', 'region', 'category',
+        'summary', 'eligibility', 'howToApply', 'deadline', 'applyUrl',
+        'sourceNote', 'linkType', 'recruitmentStatus', 'recommendationReason',
+        'conditionNote', 'worrySummary', 'createdAt', 'updatedAt'
+      ])
+      && data.keys().hasOnly([
+        'ownerId', 'programId', 'title', 'provider', 'region', 'category',
+        'summary', 'eligibility', 'howToApply', 'deadline', 'applyUrl',
+        'sourceNote', 'linkType', 'recruitmentStatus', 'recommendationReason',
+        'conditionNote', 'worrySummary', 'createdAt', 'updatedAt'
+      ])
+      && data.ownerId == userId
+      && data.programId == programId
+      && isValidId(data.ownerId)
+      && isValidId(data.programId)
+      && isBoundedString(data.title, 1, 160)
+      && isBoundedString(data.provider, 1, 100)
+      && isBoundedString(data.region, 1, 40)
+      && isBoundedString(data.category, 1, 60)
+      && isBoundedString(data.summary, 0, 600)
+      && isBoundedString(data.eligibility, 0, 400)
+      && isBoundedString(data.howToApply, 0, 400)
+      && isBoundedString(data.deadline, 0, 80)
+      && isBoundedString(data.applyUrl, 0, 500)
+      && isBoundedString(data.sourceNote, 0, 200)
+      && isBoundedString(data.linkType, 0, 40)
+      && isBoundedString(data.recruitmentStatus, 0, 60)
+      && isBoundedString(data.recommendationReason, 0, 500)
+      && isBoundedString(data.conditionNote, 0, 400)
+      && isBoundedString(data.worrySummary, 0, 200)
+      && data.createdAt is timestamp
+      && data.updatedAt is timestamp;
+    }
+
+    // 4. Collection Rules
+    match /users/{userId} {
+      allow get: if isValidId(userId) && isOwner(userId);
+      allow list: if false;
+      allow create: if isVerifiedOwner(userId)
+        && isValidId(userId)
+        && isValidUserProfile(incoming(), userId)
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isVerifiedOwner(userId)
+        && isValidId(userId)
+        && isValidUserProfile(incoming(), userId)
+        && incoming().ownerId == existing().ownerId
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && incoming().diff(existing()).affectedKeys().hasOnly([
+          'nickname', 'age', 'ageGroup', 'jobPrepStatus', 'region', 'interests', 'currentGoalFocus',
+          'onboardingCompleted', 'onboardingSkipped', 'updatedAt'
+        ]);
+      allow delete: if false;
+
+      // Daily Checkins
+      match /checkins/{checkinId} {
+        allow get: if isValidId(userId) && isValidId(checkinId) && isOwner(userId);
+        allow list: if isValidId(userId) && isOwner(userId) && existing().ownerId == request.auth.uid;
+        allow create: if isVerifiedOwner(userId)
+          && isValidId(userId)
+          && isValidId(checkinId)
+          && isValidDailyCheckin(incoming(), userId)
+          && incoming().createdAt == request.time
+          && incoming().updatedAt == request.time;
+        allow update: if isVerifiedOwner(userId)
+          && isValidId(userId)
+          && isValidId(checkinId)
+          && isValidDailyCheckin(incoming(), userId)
+          && incoming().ownerId == existing().ownerId
+          && incoming().createdAt == existing().createdAt
+          && incoming().updatedAt == request.time
+          && incoming().diff(existing()).affectedKeys().hasOnly([
+            'moodScore', 'moodLabel', 'energyLevel', 'availableMinutes',
+            'reflection', 'selfCareSuggestion', 'updatedAt'
+          ]);
+        allow delete: if isVerifiedOwner(userId) && isValidId(userId) && isValidId(checkinId);
+      }
+
+      // Worries
+      match /worries/{worryId} {
+        allow get: if isValidId(userId) && isValidId(worryId) && isOwner(userId);
+        allow list: if isValidId(userId) && isOwner(userId) && existing().ownerId == request.auth.uid;
+        allow create: if isVerifiedOwner(userId)
+          && isValidId(userId)
+          && isValidId(worryId)
+          && isValidWorryItem(incoming(), userId)
+          && incoming().createdAt == request.time
+          && incoming().updatedAt == request.time;
+        allow update: if isVerifiedOwner(userId)
+          && isValidId(userId)
+          && isValidId(worryId)
+          && isValidWorryItem(incoming(), userId)
+          && incoming().ownerId == existing().ownerId
+          && incoming().createdAt == existing().createdAt
+          && incoming().updatedAt == request.time
+          && (
+            incoming().diff(existing()).affectedKeys().hasOnly(['status', 'updatedAt'])
+            || incoming().diff(existing()).affectedKeys().hasOnly([
+              'title', 'description', 'category', 'status', 'aiSummary', 'nextStep', 'updatedAt'
+            ])
+          );
+        allow delete: if isVerifiedOwner(userId) && isValidId(userId) && isValidId(worryId);
+      }
+
+      // Growth Roadmaps
+      match /roadmaps/{roadmapId} {
+        allow get: if isValidId(userId) && isValidId(roadmapId) && isOwner(userId);
+        allow list: if isValidId(userId) && isOwner(userId) && existing().ownerId == request.auth.uid;
+        allow create: if isVerifiedOwner(userId)
+          && isValidId(userId)
+          && isValidId(roadmapId)
+          && isValidGrowthRoadmap(incoming(), userId)
+          && incoming().createdAt == request.time
+          && incoming().updatedAt == request.time;
+        allow update: if isVerifiedOwner(userId)
+          && isValidId(userId)
+          && isValidId(roadmapId)
+          && isValidGrowthRoadmap(incoming(), userId)
+          && existing().status != 'completed'
+          && incoming().ownerId == existing().ownerId
+          && incoming().createdAt == existing().createdAt
+          && incoming().updatedAt == request.time
+          && (
+            incoming().diff(existing()).affectedKeys().hasOnly(['progressPercent', 'status', 'updatedAt'])
+            || incoming().diff(existing()).affectedKeys().hasOnly([
+              'title', 'timeframe', 'summary', 'updatedAt'
+            ])
+            || incoming().diff(existing()).affectedKeys().hasOnly([
+              'title', 'timeframe', 'summary', 'energyLevel', 'recommendationReason',
+              'energyFitExplanation', 'status', 'progressPercent', 'adjustmentReason', 'updatedAt'
+            ])
+          );
+        allow delete: if isVerifiedOwner(userId) && isValidId(userId) && isValidId(roadmapId);
+
+        // Roadmap Tasks (Master Gate against parent Roadmap)
+        match /tasks/{taskId} {
+          allow get: if isValidId(userId) && isValidId(roadmapId) && isValidId(taskId) && isOwner(userId)
+            && exists(/databases/$(database)/documents/users/$(userId)/roadmaps/$(roadmapId));
+          allow list: if isValidId(userId) && isValidId(roadmapId) && isOwner(userId)
+            && existing().ownerId == request.auth.uid
+            && existing().roadmapId == roadmapId;
+          allow create: if isVerifiedOwner(userId)
+            && isValidId(userId)
+            && isValidId(roadmapId)
+            && isValidId(taskId)
+            && isValidRoadmapTask(incoming(), userId, roadmapId)
+            && incoming().createdAt == request.time
+            && incoming().updatedAt == request.time
+            && get(/databases/$(database)/documents/users/$(userId)/roadmaps/$(roadmapId)).data.ownerId == request.auth.uid;
+          allow update: if isVerifiedOwner(userId)
+            && isValidId(userId)
+            && isValidId(roadmapId)
+            && isValidId(taskId)
+            && isValidRoadmapTask(incoming(), userId, roadmapId)
+            && incoming().ownerId == existing().ownerId
+            && incoming().roadmapId == existing().roadmapId
+            && incoming().createdAt == existing().createdAt
+            && incoming().updatedAt == request.time
+            && exists(/databases/$(database)/documents/users/$(userId)/roadmaps/$(roadmapId))
+            && (
+              incoming().diff(existing()).affectedKeys().hasOnly(['completed', 'status', 'completedAt', 'blockerNote', 'updatedAt'])
+              || incoming().diff(existing()).affectedKeys().hasOnly(['blockerNote', 'updatedAt'])
+              || incoming().diff(existing()).affectedKeys().hasOnly([
+                'title', 'description', 'cadence', 'dayLabel', 'scheduledDate', 'durationMinutes', 'updatedAt'
+              ])
+              || incoming().diff(existing()).affectedKeys().hasOnly([
+                'title', 'description', 'cadence', 'dayLabel', 'scheduledDate', 'durationMinutes',
+                'status', 'completed', 'completedAt', 'blockerNote', 'adjustedFrom', 'updatedAt'
+              ])
+            );
+          allow delete: if isVerifiedOwner(userId)
+            && isValidId(userId)
+            && isValidId(roadmapId)
+            && isValidId(taskId)
+            && exists(/databases/$(database)/documents/users/$(userId)/roadmaps/$(roadmapId));
+        }
+      }
+
+      // Goal & Roadmap Change Activity Logs (Append-only with Master Gate against parent Roadmap)
+      match /goalActivityLogs/{logId} {
+        allow get: if isValidId(userId) && isValidId(logId) && isOwner(userId);
+        allow list: if isValidId(userId) && isOwner(userId) && existing().ownerId == request.auth.uid;
+        allow create: if isVerifiedOwner(userId)
+          && isValidId(userId)
+          && isValidId(logId)
+          && isValidGoalActivityLog(incoming(), userId)
+          && incoming().createdAt == request.time
+          && get(/databases/$(database)/documents/users/$(userId)/roadmaps/$(incoming().roadmapId)).data.ownerId == request.auth.uid;
+        allow update: if false;
+        allow delete: if false;
+      }
+
+      // Competencies (preserved for existing data)
+      match /competencies/{competencyId} {
+        allow get: if isValidId(userId) && isValidId(competencyId) && isOwner(userId);
+        allow list: if isValidId(userId) && isOwner(userId) && existing().ownerId == request.auth.uid;
+        allow create: if isVerifiedOwner(userId)
+          && isValidId(userId)
+          && isValidId(competencyId)
+          && isValidCompetencyCard(incoming(), userId)
+          && incoming().createdAt == request.time
+          && incoming().updatedAt == request.time;
+        allow update: if isVerifiedOwner(userId)
+          && isValidId(userId)
+          && isValidId(competencyId)
+          && isValidCompetencyCard(incoming(), userId)
+          && incoming().ownerId == existing().ownerId
+          && incoming().createdAt == existing().createdAt
+          && incoming().updatedAt == request.time
+          && (
+            incoming().diff(existing()).affectedKeys().hasOnly(['verifiedByUser', 'updatedAt'])
+            || incoming().diff(existing()).affectedKeys().hasOnly([
+              'name', 'category', 'evidenceSummary', 'verifiedByUser', 'targetRoles', 'growthTip', 'updatedAt'
+            ])
+          );
+        allow delete: if isVerifiedOwner(userId) && isValidId(userId) && isValidId(competencyId);
+      }
+
+      // Portfolios (preserved for existing data)
+      match /portfolios/{portfolioId} {
+        allow get: if isValidId(userId) && isValidId(portfolioId) && isOwner(userId);
+        allow list: if isValidId(userId) && isOwner(userId) && existing().ownerId == request.auth.uid;
+        allow create: if isVerifiedOwner(userId)
+          && isValidId(userId)
+          && isValidId(portfolioId)
+          && isValidPortfolioDoc(incoming(), userId)
+          && incoming().createdAt == request.time
+          && incoming().updatedAt == request.time;
+        allow update: if isVerifiedOwner(userId)
+          && isValidId(userId)
+          && isValidId(portfolioId)
+          && isValidPortfolioDoc(incoming(), userId)
+          && incoming().ownerId == existing().ownerId
+          && incoming().createdAt == existing().createdAt
+          && incoming().updatedAt == request.time
+          && incoming().diff(existing()).affectedKeys().hasOnly([
+            'title', 'targetRole', 'introSummary', 'strengthsSection',
+            'experiencesSection', 'projectsSection', 'completionPercent',
+            'versionNumber', 'updatedAt'
+          ]);
+        allow delete: if isVerifiedOwner(userId) && isValidId(userId) && isValidId(portfolioId);
+
+        match /versions/{versionId} {
+          allow get: if isValidId(userId) && isValidId(portfolioId) && isValidId(versionId) && isOwner(userId)
+            && exists(/databases/$(database)/documents/users/$(userId)/portfolios/$(portfolioId));
+          allow list: if isValidId(userId) && isValidId(portfolioId) && isOwner(userId)
+            && existing().ownerId == request.auth.uid
+            && existing().portfolioId == portfolioId;
+          allow create: if isVerifiedOwner(userId)
+            && isValidId(userId)
+            && isValidId(portfolioId)
+            && isValidId(versionId)
+            && isValidPortfolioVersion(incoming(), userId, portfolioId)
+            && incoming().createdAt == request.time
+            && get(/databases/$(database)/documents/users/$(userId)/portfolios/$(portfolioId)).data.ownerId == request.auth.uid;
+          allow update: if false;
+          allow delete: if false;
+        }
+      }
+
+      // Conversations
+      match /conversations/{messageId} {
+        allow get: if isValidId(userId) && isValidId(messageId) && isOwner(userId);
+        allow list: if isValidId(userId) && isOwner(userId) && existing().ownerId == request.auth.uid;
+        allow create: if isVerifiedOwner(userId)
+          && isValidId(userId)
+          && isValidId(messageId)
+          && isValidAgentMessage(incoming(), userId)
+          && incoming().createdAt == request.time;
+        allow update: if false;
+        allow delete: if isVerifiedOwner(userId) && isValidId(userId) && isValidId(messageId);
+      }
+
+      // Activities (Append-only history log)
+      match /activities/{activityId} {
+        allow get: if isValidId(userId) && isValidId(activityId) && isOwner(userId);
+        allow list: if isValidId(userId) && isOwner(userId) && existing().ownerId == request.auth.uid;
+        allow create: if isVerifiedOwner(userId)
+          && isValidId(userId)
+          && isValidId(activityId)
+          && isValidActivityLog(incoming(), userId)
+          && incoming().createdAt == request.time;
+        allow update: if false;
+        allow delete: if false;
+      }
+
+      // Saved Programs
+      match /savedPrograms/{programId} {
+        allow get: if isValidId(userId) && isValidId(programId) && isOwner(userId);
+        allow list: if isValidId(userId) && isOwner(userId) && existing().ownerId == request.auth.uid;
+        allow create: if isVerifiedOwner(userId)
+          && isValidId(userId)
+          && isValidId(programId)
+          && isValidSavedProgram(incoming(), userId, programId)
+          && incoming().createdAt == request.time
+          && incoming().updatedAt == request.time;
+        allow update: if isVerifiedOwner(userId)
+          && isValidId(userId)
+          && isValidId(programId)
+          && isValidSavedProgram(incoming(), userId, programId)
+          && incoming().ownerId == existing().ownerId
+          && incoming().programId == existing().programId
+          && incoming().createdAt == existing().createdAt
+          && incoming().updatedAt == request.time
+          && incoming().diff(existing()).affectedKeys().hasOnly(['notifyRequested', 'updatedAt']);
+        allow delete: if isVerifiedOwner(userId) && isValidId(userId) && isValidId(programId);
+      }
+
+      // Recommended Programs (from Worry Analysis)
+      match /recommendedPrograms/{programId} {
+        allow get: if isValidId(userId) && isValidId(programId) && isOwner(userId);
+        allow list: if isValidId(userId) && isOwner(userId) && existing().ownerId == request.auth.uid;
+        allow create: if isVerifiedOwner(userId)
+          && isValidId(userId)
+          && isValidId(programId)
+          && isValidRecommendedProgram(incoming(), userId, programId)
+          && incoming().createdAt == request.time
+          && incoming().updatedAt == request.time;
+        allow update: if isVerifiedOwner(userId)
+          && isValidId(userId)
+          && isValidId(programId)
+          && isValidRecommendedProgram(incoming(), userId, programId)
+          && incoming().ownerId == existing().ownerId
+          && incoming().programId == existing().programId
+          && incoming().createdAt == existing().createdAt
+          && incoming().updatedAt == request.time
+          && incoming().diff(existing()).affectedKeys().hasOnly([
+            'title', 'provider', 'region', 'category', 'summary', 'eligibility',
+            'howToApply', 'deadline', 'applyUrl', 'sourceNote', 'linkType',
+            'recruitmentStatus', 'recommendationReason', 'conditionNote',
+            'worrySummary', 'updatedAt'
+          ]);
+        allow delete: if isVerifiedOwner(userId) && isValidId(userId) && isValidId(programId);
+      }
+    }
+  }
+}

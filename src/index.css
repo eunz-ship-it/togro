@@ -1,0 +1,206 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --font-display: "Plus Jakarta Sans", "Noto Sans KR", -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-sans: "DM Sans", "Noto Sans KR", -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+
+    /* TOGRO theme */
+    --tg-primary: #79B8E0;          /* Soft Blue */
+    --tg-primary-hover: #64A8D4;    /* Soft Blue Hover */
+    --tg-primary-soft: #EBF5FB;     /* Soft Blue Tint */
+    --tg-secondary: #A8DCC8;        /* Mint Green */
+    --tg-secondary-hover: #92D1B9;  /* Mint Green Hover */
+    --tg-secondary-soft: #ECF8F3;   /* Mint Green Tint */
+    --tg-bg: #F5FAFD;               /* Soft Ice Blue */
+    --tg-surface: #FFFFFF;          /* White Card Surface */
+    --tg-text: #285A78;             /* Deep Blue */
+    --tg-text-strong: #14374D;      /* High-contrast Deep Blue on Soft Blue / Mint */
+    --tg-text-muted: #4B758F;       /* Muted Blue-Gray (>=4.7:1 contrast on light surfaces) */
+    --tg-border: #D7E6F2;           /* Soft Blue-Gray Border */
+    --tg-border-strong: #B4D1E5;    /* Stronger Blue-Gray Border */
+    --tg-success: #155E4B;
+    --tg-error: #9B1C1C;
+    --tg-error-border: #F4BDBD;
+    --tg-error-soft: #FDF2F2;
+    --tg-warning: #8A5300;
+    --tg-warning-border: #E8C266;
+    --tg-warning-soft: #FEF7E6;
+    --tg-border-subtle: #E6F0F7;
+    --tg-primary-border: #65A8D3;
+    --tg-mint-border: #8CCBB3;
+    --tg-placeholder: #57788D;
+    --tg-chart-mood: #2A6F99;
+    --tg-chart-energy: #21805F;
+    color-scheme: light;
+    --tg-shadow: 0 2px 12px rgba(40, 90, 120, 0.05);
+  }
+
+  :root[data-theme='dark'] {
+    --tg-primary: #235675;
+    --tg-primary-hover: #2D688B;
+    --tg-primary-soft: #1D3549;
+    --tg-secondary: #285648;
+    --tg-secondary-hover: #326C5A;
+    --tg-secondary-soft: #193A34;
+    --tg-bg: #101C29;
+    --tg-surface: #172735;
+    --tg-text: #C0D8E8;
+    --tg-text-strong: #F0F8FC;
+    --tg-text-muted: #A4BFD1;
+    --tg-border: #324B60;
+    --tg-border-strong: #486680;
+    --tg-border-subtle: #293F52;
+    --tg-primary-border: #5289AA;
+    --tg-mint-border: #44816F;
+    --tg-placeholder: #91AEC2;
+    --tg-success: #91E5C3;
+    --tg-error: #FFC3C0;
+    --tg-error-border: #A35D64;
+    --tg-error-soft: #442832;
+    --tg-warning: #FFD991;
+    --tg-warning-border: #836C42;
+    --tg-warning-soft: #3A3020;
+    --tg-chart-mood: #81C8FE;
+    --tg-chart-energy: #84DFB9;
+    --tg-shadow: 0 2px 12px rgb(0 0 0 / 0.18);
+    color-scheme: dark;
+  }
+
+  ::selection {
+    background-color: var(--tg-secondary);
+    color: var(--tg-text-strong);
+  }
+
+  html {
+    font-family: var(--font-sans);
+    background-color: var(--tg-bg);
+    color: var(--tg-text);
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background-color: var(--tg-bg);
+    color: var(--tg-text);
+    overflow-x: hidden;
+    word-break: keep-all;
+    overflow-wrap: anywhere;
+  }
+
+  h1, h2, h3, h4, .font-display {
+    font-family: var(--font-display);
+  }
+
+  .font-mono, .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+@layer components {
+  .tg-card {
+    background-color: var(--tg-surface);
+    border: 1px solid var(--tg-border);
+    border-radius: 1rem;
+    box-shadow: var(--tg-shadow);
+  }
+
+  .tg-btn-primary {
+    background-color: var(--tg-primary);
+    color: var(--tg-text-strong);
+    border: 1px solid var(--tg-primary-border);
+    border-radius: 0.75rem;
+    font-weight: 600;
+    min-height: 42px;
+    transition: background-color 150ms ease, border-color 150ms ease, transform 120ms ease;
+  }
+
+  .tg-btn-primary:hover:not(:disabled) {
+    background-color: var(--tg-primary-hover);
+    border-color: var(--tg-primary-border);
+  }
+
+  .tg-btn-primary:focus-visible {
+    outline: 2px solid var(--tg-text);
+    outline-offset: 2px;
+  }
+
+  .tg-btn-primary:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+
+  .tg-btn-secondary {
+    background-color: var(--tg-surface);
+    color: var(--tg-text);
+    border: 1px solid var(--tg-border-strong);
+    border-radius: 0.75rem;
+    font-weight: 500;
+    min-height: 42px;
+    transition: background-color 150ms ease, border-color 150ms ease;
+  }
+
+  .tg-btn-secondary:hover:not(:disabled) {
+    background-color: var(--tg-primary-soft);
+    border-color: var(--tg-primary);
+  }
+
+  .tg-btn-secondary:focus-visible {
+    outline: 2px solid var(--tg-text);
+    outline-offset: 2px;
+  }
+
+  .tg-btn-mint {
+    background-color: var(--tg-secondary);
+    color: var(--tg-text-strong);
+    border: 1px solid var(--tg-mint-border);
+    border-radius: 0.75rem;
+    font-weight: 600;
+    min-height: 42px;
+    transition: background-color 150ms ease, border-color 150ms ease;
+  }
+
+  .tg-btn-mint:hover:not(:disabled) {
+    background-color: var(--tg-secondary-hover);
+  }
+
+  .tg-btn-mint:focus-visible {
+    outline: 2px solid var(--tg-text);
+    outline-offset: 2px;
+  }
+
+  .tg-input {
+    background-color: var(--tg-bg);
+    color: var(--tg-text);
+    border: 1px solid var(--tg-border);
+    border-radius: 0.75rem;
+    transition: background-color 150ms ease, border-color 150ms ease, box-shadow 150ms ease;
+  }
+
+  .tg-input::placeholder {
+    color: var(--tg-placeholder);
+  }
+
+  .tg-input:focus {
+    background-color: var(--tg-surface);
+    border-color: var(--tg-primary);
+    box-shadow: 0 0 0 3px rgba(121, 184, 224, 0.25);
+    outline: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .tg-thread-options { opacity: 0; }
+  .group:hover .tg-thread-options,
+  .group:focus-within .tg-thread-options,
+  .tg-thread-options[aria-expanded='true'] { opacity: 1; }
+}

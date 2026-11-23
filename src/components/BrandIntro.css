@@ -1,0 +1,115 @@
+.tg-brand-intro {
+  position: fixed;
+  inset: 0;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: none;
+  height: 100%;
+  max-height: none;
+  margin: 0;
+  padding: 1.25rem;
+  border: 0;
+  overflow: hidden;
+  color: var(--tg-text-strong);
+  background: radial-gradient(ellipse at 38% 48%, var(--tg-primary-soft), transparent 60%),
+    radial-gradient(ellipse at 70% 75%, var(--tg-secondary-soft), transparent 65%), var(--tg-bg);
+  animation: tg-intro-reveal var(--tg-intro-duration) ease-in both;
+}
+
+.tg-brand-intro[open] {
+  display: grid;
+  place-items: center;
+}
+
+.tg-brand-intro::backdrop {
+  background: transparent;
+}
+
+.tg-intro-wordmark {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  width: 100%;
+  font-family: var(--font-display);
+  font-size: clamp(1.875rem, 8.2vw, 5.75rem);
+  font-weight: 700;
+  line-height: 1.35;
+  letter-spacing: -0.055em;
+  white-space: nowrap;
+  user-select: none;
+  animation: tg-intro-land var(--tg-intro-duration) both;
+}
+
+.tg-intro-word {
+  display: flex;
+  align-items: baseline;
+}
+
+.tg-intro-together {
+  color: var(--tg-chart-mood);
+}
+
+.tg-intro-grow {
+  color: var(--tg-chart-energy);
+}
+
+.tg-intro-kept {
+  animation: tg-intro-capitalize var(--tg-intro-duration) both;
+}
+
+.tg-intro-tail,
+.tg-intro-hyphen {
+  display: inline-grid;
+}
+
+.tg-intro-tail > span,
+.tg-intro-hyphen > span {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.tg-intro-tail {
+  animation: tg-intro-contract var(--tg-intro-duration) both;
+}
+
+.tg-intro-hyphen {
+  animation: tg-intro-join var(--tg-intro-duration) both;
+}
+
+.tg-intro-skip {
+  position: absolute;
+  inset-block-end: max(1.5rem, env(safe-area-inset-bottom));
+  inset-inline-end: max(1.5rem, env(safe-area-inset-right));
+  min-height: 44px;
+  padding-inline: 1rem;
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+@keyframes tg-intro-contract {
+  0%, 27% { grid-template-columns: 1fr; opacity: 1; }
+  56%, 100% { grid-template-columns: 0fr; opacity: 0; }
+}
+
+@keyframes tg-intro-join {
+  0%, 24% { grid-template-columns: 0fr; margin-inline: 0.2em; opacity: 0; }
+  55%, 100% { grid-template-columns: 1fr; margin-inline: 0.015em; opacity: 1; }
+}
+
+@keyframes tg-intro-capitalize {
+  0%, 39% { color: inherit; text-transform: none; }
+  53%, 100% { color: var(--tg-text-strong); text-transform: uppercase; }
+}
+
+@keyframes tg-intro-land {
+  0% { opacity: 0.75; transform: translateY(0.12em) scale(0.97); }
+  14%, 29% { opacity: 1; transform: translateY(0) scale(1); }
+  57% { opacity: 1; transform: translateY(-0.035em) scale(1.055); }
+  72%, 100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes tg-intro-reveal {
+  0%, 86% { opacity: 1; }
+  100% { opacity: 0; }
+}
